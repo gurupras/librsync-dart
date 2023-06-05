@@ -7,6 +7,7 @@ import 'package:test/test.dart';
 
 import 'bytes_stream_consumer.dart';
 import 'circbuf/circbuf_test.dart';
+import 'delta_test.dart';
 import 'signature_test.dart';
 
 class SeekableList implements ReadSeeker {
@@ -30,6 +31,23 @@ void main() {
     test('end-to-end', () async {
       final base = toBytes("Hello World");
       final target = toBytes("Hollywood");
+
+      final sig = await testCreateSignature(Stream.fromIterable([base]));
+
+      final deltaWriter = BytesStreamConsumer();
+      await delta(
+          sig, ChunkedStreamReader(Stream.fromIterable([target])), deltaWriter);
+
+      final output = BytesStreamConsumer();
+      await patch(SeekableList(base),
+          Stream.fromIterable([deltaWriter.toUint8List()]), output);
+
+      expect(output.toUint8List(), target);
+    });
+
+    test('Large Test', () async {
+      final base = generateRandomBytes((0.1 * 1024 * 1024) ~/ 1);
+      final target = generateRandomBytes((0.1 * 1024 * 1024) ~/ 1);
 
       final sig = await testCreateSignature(Stream.fromIterable([base]));
 

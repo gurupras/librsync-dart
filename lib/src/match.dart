@@ -87,11 +87,10 @@ class Match {
               break;
           }
 
-          final byteBuilder = BytesBuilder(copy: false);
-          byteBuilder.add(fixedIntBytes(cmd, 1));
-          byteBuilder.add(fixedIntBytes(len, lenSize));
-          byteBuilder.add(litBuf);
-          await output.write(byteBuilder.takeBytes());
+          final cmdBytes = fixedIntBytes(cmd, 1);
+          final lenBytes = fixedIntBytes(len, lenSize);
+          await output.write(cmdBytes + lenBytes + litBuf);
+
           litBuf.clear();
           break;
         }
@@ -144,7 +143,7 @@ int intSize(int d) {
   }
 }
 
-Uint8List fixedIntBytes(int value, int size) {
+Uint8List fixedIntBytesUsingByteData(int value, int size) {
   final byteData = ByteData(size);
   switch (size) {
     case 1:
@@ -163,6 +162,27 @@ Uint8List fixedIntBytes(int value, int size) {
   return byteData.buffer.asUint8List();
 }
 
-Future<void> writeFixedInt(Writer writer, int value, int size) async {
-  return writer.write(fixedIntBytes(value, size));
+Uint8List fixedIntBytesUsingBitOperations(int value, int size, Endian endian) {
+  Uint8List bytes = Uint8List(size); // Uint8List to store the bytes
+  _fixedIntBytesUsingBitOperations(value, size, endian, bytes);
+  return bytes;
+}
+
+void _fixedIntBytesUsingBitOperations(
+    int value, int size, Endian endian, Uint8List bytes) {
+  if (endian == Endian.big) {
+    for (int i = size - 1; i >= 0; i--) {
+      bytes[i] = value & 0xFF; // Extract the least significant byte
+      value >>= 8; // Right-shift the value by 8 bits to process the next byte
+    }
+  } else {
+    for (int i = 0; i < size; i++) {
+      bytes[i] = value & 0xFF; // Extract the least significant byte
+      value >>= 8; // Right-shift the value by 8 bits to process the next byte
+    }
+  }
+}
+
+Uint8List fixedIntBytes(int value, int size) {
+  return fixedIntBytesUsingBitOperations(value, size, Endian.big);
 }

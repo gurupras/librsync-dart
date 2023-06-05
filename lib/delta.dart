@@ -99,3 +99,7 @@ Future<void> _computeDelta(SignatureType sig, ChunkedStreamReader<int> input,
   print('Finished delta. Writing OP_END (1 byte)');
   await writeFixedInt(output, OP_END, 1);
 }
+
+Future<void> writeFixedInt(Writer writer, int value, int size) async {
+  return writer.write(fixedIntBytes(value, size));
+}
