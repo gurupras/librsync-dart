@@ -4,10 +4,10 @@ import 'package:benchmark_harness/benchmark_harness.dart';
 
 typedef CreateFixedIntInstance = Uint8List Function(int, int);
 
-class FixedIntBenchmark extends BenchmarkBase {
+class WriteFixedIntBenchmark extends BenchmarkBase {
   final CreateFixedIntInstance convert;
 
-  const FixedIntBenchmark(this.convert) : super('FixedInt');
+  const WriteFixedIntBenchmark(this.convert) : super('FixedInt');
 
   @override
   void run() {

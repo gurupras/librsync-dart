@@ -144,9 +144,17 @@ Future<int> readFixedInt(ChunkedStreamReader<int> input, int size) async {
   if (list.length < size) {
     throw 'EOF';
   }
+  int value = 0;
+  for (int i = 0; i < size; i++) {
+    value = (value << 8) | list[i];
+  }
+  return value;
+}
+
+int parseIntUsingByteData(List<int> list) {
   Uint8List bytes = Uint8List.fromList(list);
   ByteData byteData = ByteData.view(bytes.buffer);
-  switch (size) {
+  switch (list.length) {
     case 1:
       return byteData.getUint8(0);
     case 2:
@@ -156,8 +164,16 @@ Future<int> readFixedInt(ChunkedStreamReader<int> input, int size) async {
     case 8:
       return byteData.getUint64(0, Endian.big);
     default:
-      throw 'Unexpected size $size';
+      throw 'Unexpected size ${list.length}';
   }
+}
+
+int parseIntBitWise(List<int> bytes) {
+  int value = 0;
+  for (int i = 0; i < bytes.length; i++) {
+    value = (value << 8) | bytes[i];
+  }
+  return value;
 }
 
 Future<SignatureType> readSignatureFile(String path) async {

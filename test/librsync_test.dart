@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'dart:typed_data';
 
 import 'package:async/async.dart';
@@ -46,9 +47,9 @@ void main() {
     });
 
     test('Large Test', () async {
-      final base = generateRandomBytes((0.1 * 1024 * 1024) ~/ 1);
-      final target = generateRandomBytes((0.1 * 1024 * 1024) ~/ 1);
-
+      final base = generateRandomBytes((1 * 1024 * 1024) ~/ 1);
+      final target = generateRandomBytes((1 * 1024 * 1024) ~/ 1);
+      debugger();
       final sig = await testCreateSignature(Stream.fromIterable([base]));
 
       final deltaWriter = BytesStreamConsumer();
@@ -60,6 +61,7 @@ void main() {
           Stream.fromIterable([deltaWriter.toUint8List()]), output);
 
       expect(output.toUint8List(), target);
+      debugger();
     });
   });
 }

@@ -2,9 +2,9 @@ import 'dart:typed_data';
 
 import 'package:librsync/src/match.dart';
 
-import 'fixed_int_benchmark.dart';
+import 'write_fixed_int_benchmark.dart';
 
-class FixedIntDirectBenchmark extends FixedIntBenchmark {
+class FixedIntDirectBenchmark extends WriteFixedIntBenchmark {
   FixedIntDirectBenchmark()
       : super((int value, int size) {
           return fixedIntBytesUsingBitOperations(value, size, Endian.big);
