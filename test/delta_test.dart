@@ -1,7 +1,7 @@
 import 'dart:math';
 
-import 'package:async/async.dart';
 import 'package:librsync/delta.dart';
+import 'package:librsync/src/reader_writer.dart';
 import 'package:test/test.dart';
 
 import 'bytes_stream_consumer.dart';
@@ -32,7 +32,7 @@ void main() {
       srcStream = Stream.fromIterable([srcBuf]);
 
       final output = BytesStreamConsumer();
-      await delta(sig, ChunkedStreamReader(srcStream), output);
+      await delta(sig, StreamReader(srcStream), output);
     });
   });
 }

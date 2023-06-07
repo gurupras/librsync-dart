@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:librsync/src/circbuf/circbuf.dart';
 import 'package:test/test.dart';
@@ -8,7 +9,7 @@ void main() {
     test('Short write', () async {
       final buf = newBuffer(1024);
 
-      List<int> inp = toBytes("hello world");
+      final inp = toBytes("hello world");
       final n = buf.write(inp);
       expect(n, inp.length);
 
@@ -16,7 +17,7 @@ void main() {
     });
 
     test('Full write', () async {
-      List<int> inp = toBytes("hello world");
+      final inp = toBytes("hello world");
 
       final buf = newBuffer(inp.length);
       final n = buf.write(inp);
@@ -26,7 +27,7 @@ void main() {
     });
 
     test('Long write', () async {
-      List<int> inp = toBytes("hello world");
+      final inp = toBytes("hello world");
 
       final buf = newBuffer(6);
       final n = buf.write(inp);
@@ -37,7 +38,7 @@ void main() {
     });
 
     test('Huge write', () async {
-      List<int> inp = toBytes("hello world");
+      final inp = toBytes("hello world");
 
       final buf = newBuffer(3);
       final n = buf.write(inp);
@@ -48,19 +49,18 @@ void main() {
     });
 
     test('Many small', () async {
-      List<int> inp = toBytes("hello world");
+      final inp = toBytes("hello world");
 
       final buf = newBuffer(3);
-      for (var b in inp) {
-        final n = buf.write(<int>[b]);
-        expect(n, 1);
+      for (var b in inp.toList()) {
+        buf.writeByte(b);
       }
       final expected = toBytes("rld");
       expect(buf.bytes(), expected);
     });
 
     test('Multipart', () async {
-      final inputs = <List<int>>[
+      final inputs = <Uint8List>[
         toBytes("hello world\n"),
         toBytes("this is a test\n"),
         toBytes("my cool input\n"),
@@ -81,7 +81,7 @@ void main() {
     });
 
     test('Reset', () async {
-      final inputs = <List<int>>[
+      final inputs = <Uint8List>[
         toBytes("hello world\n"),
         toBytes("this is a test\n"),
         toBytes("my cool input\n"),
@@ -133,7 +133,7 @@ void main() {
       testWriteByte(true);
     });
 
-    void testGet(List<int> inp) {
+    void testGet(Uint8List inp) {
       final initialData = toBytes("hell");
       expect(inp.length >= initialData.length, true);
 
@@ -165,6 +165,6 @@ void main() {
   });
 }
 
-List<int> toBytes(String s) {
-  return utf8.encode(s);
+Uint8List toBytes(String s) {
+  return Uint8List.fromList(utf8.encode(s));
 }

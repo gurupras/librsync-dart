@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 
 import 'package:librsync/src/circbuf/basebuf.dart';
 
@@ -5,7 +6,7 @@ class PO2Buffer extends BaseBuffer {
   PO2Buffer(int size) : super(size);
 
   @override
-  int write(List<int> buf) {
+  int write(Uint8List buf) {
     final n = super.write(buf);
     writeCursor = (writeCursor + n) & (maxSize - 1);
     return buf.length;

@@ -1,10 +1,9 @@
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:async/async.dart';
-import 'package:librsync/delta.dart';
 import 'package:librsync/signature.dart';
 import 'package:librsync/src/op.dart';
+import 'package:librsync/src/reader_writer.dart';
 
 typedef MagicNumber = int;
 
@@ -15,9 +14,10 @@ const MagicNumber blake2SigMagic = 0x72730137;
 abstract interface class ReadSeeker {
   Future<void> seek(int pos);
   Future<Uint8List> read(int count);
+  Uint8List readSync(int count);
 }
 
-Future<int> readParam(ChunkedStreamReader<int> src, int size) async {
+Future<int> readParam(Reader src, int size) async {
   switch (size) {
     case 1:
     case 2:
@@ -39,26 +39,30 @@ class FileReadSeeker implements ReadSeeker {
   }
 
   @override
-  Future<Uint8List> read(int count) {
+  Future<Uint8List> read(int count) async {
     return f.read(count);
+  }
+
+  @override
+  Uint8List readSync(int count) {
+    return f.readSync(count);
   }
 }
 
 Future<void> patchWithBaseFile(
-    RandomAccessFile base, Stream<List<int>> delta, IOSink out) async {
+    RandomAccessFile base, Reader delta, IOSink out) async {
   return patch(FileReadSeeker(f: base), delta, FileWriter(out));
 }
 
-Future<void> patch(ReadSeeker base, Stream<List<int>> delta, Writer out) async {
-  final chunkedDeltaReader = ChunkedStreamReader<int>(delta);
-  final magic = await readInt(chunkedDeltaReader);
+Future<void> patch(ReadSeeker base, Reader delta, Writer out) async {
+  final magic = await readInt(delta);
 
   if (magic != deltaMagic) {
     throw FormatException(
         'Got magic number ${magic.toRadixString(16)} rather than expected value ${deltaMagic.toRadixString(16)}');
   }
 
-  Op op = await readFixedInt(chunkedDeltaReader, 1);
+  Op op = await readFixedInt(delta, 1);
 
   while (op != 0) {
     final cmd = op2cmd[op];
@@ -68,14 +72,14 @@ Future<void> patch(ReadSeeker base, Stream<List<int>> delta, Writer out) async {
     if (cmd.len1 == 0) {
       param1 = cmd.immediate;
     } else {
-      param1 = await readParam(chunkedDeltaReader, cmd.len1);
-      param2 = await readParam(chunkedDeltaReader, cmd.len2);
+      param1 = await readParam(delta, cmd.len1);
+      param2 = await readParam(delta, cmd.len2);
     }
 
     switch (cmd.kind) {
       case KIND_LITERAL:
         {
-          final bytes = await chunkedDeltaReader.readBytes(param1);
+          final bytes = await delta.readBytes(param1);
           await out.write(bytes);
           break;
         }
@@ -91,6 +95,6 @@ Future<void> patch(ReadSeeker base, Stream<List<int>> delta, Writer out) async {
       default:
         throw Exception('Bogus command ${cmd.kind.toRadixString(16)}');
     }
-    op = await readFixedInt(chunkedDeltaReader, 1);
+    op = await readFixedInt(delta, 1);
   }
 }

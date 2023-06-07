@@ -1,10 +1,11 @@
+import 'dart:typed_data';
+
 import 'package:benchmark_harness/benchmark_harness.dart';
 import 'package:librsync/signature.dart';
 
-import 'write_fixed_int_benchmark.dart';
 
 class ParseIntBenchmark extends BenchmarkBase {
-  final int Function(List<int>) convert;
+  final int Function(Uint8List) convert;
 
   ParseIntBenchmark(String name, this.convert)
       : super("ParseIntBenchmark($name)");
@@ -12,11 +13,11 @@ class ParseIntBenchmark extends BenchmarkBase {
   @override
   void run() {
     final expected = 4;
-    final byteArrays = <List<int>>[
-      <int>[4],
-      <int>[0, 4],
-      <int>[0, 0, 0, 4],
-      <int>[0, 0, 0, 0, 0, 0, 0, 4]
+    final byteArrays = <Uint8List>[
+      Uint8List.fromList(<int>[4]),
+      Uint8List.fromList(<int>[0, 4]),
+      Uint8List.fromList(<int>[0, 0, 0, 4]),
+      Uint8List.fromList(<int>[0, 0, 0, 0, 0, 0, 0, 4])
     ];
 
     final sizes = [1, 2, 4, 8];

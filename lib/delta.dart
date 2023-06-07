@@ -2,51 +2,33 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:async/async.dart';
 import 'package:collection/collection.dart';
 import 'package:librsync/patch.dart';
 import 'package:librsync/signature.dart';
 import 'package:librsync/src/circbuf/circbuf.dart';
 import 'package:librsync/src/match.dart';
 import 'package:librsync/src/op.dart';
+import 'package:librsync/src/reader_writer.dart';
 import 'package:librsync/src/rollsum.dart';
 
 const outputBufferSize = 16 * 1024 * 1024;
 
-abstract interface class Writer {
-  Future<void> write(List<int> bytes);
-}
-
-class FileWriter implements Writer {
-  final IOSink _sink;
-  FileWriter(this._sink);
-
-  @override
-  Future<void> write(List<int> bytes) async {
-    _sink.add(bytes);
-  }
-}
-
-Future<void> delta(
-    SignatureType sig, ChunkedStreamReader<int> input, Writer output,
+Future<void> delta(SignatureType sig, Reader input, Writer output,
     {int maxBufferSize = outputBufferSize}) {
-  final litBuf = <int>[];
-  return _computeDelta(sig, input, output, litBuf, maxBufferSize);
+  final bytesBuilder = BytesBuilder(copy: false);
+  return _computeDelta(sig, input, output, bytesBuilder, maxBufferSize);
 }
 
-Future<void> _computeDelta(SignatureType sig, ChunkedStreamReader<int> input,
-    Writer output, List<int> litBuf, int litBufSize) async {
-  if (litBuf.isNotEmpty) {
-    throw 'bad literal buffer';
-  }
-
+Future<void> _computeDelta(SignatureType sig, Reader input, Writer output,
+    BytesBuilder bytesBuilder, int litBufSize) async {
   await writeFixedInt(output, deltaMagic, 4);
 
   int prevByte = 0;
 
   final uint8ListEquality = ListEquality().equals;
 
-  final m = Match(output: output, litBuf: litBuf, outputBufferSize: litBufSize);
+  final m = Match(
+      output: output, bytesBuilder: bytesBuilder, outputBufferSize: litBufSize);
 
   Rollsum weakSum = Rollsum();
   final block = newBuffer(sig.blockLen);
@@ -79,8 +61,8 @@ Future<void> _computeDelta(SignatureType sig, ChunkedStreamReader<int> input,
     final digest = weakSum.digest();
     if (sig.weak2block.containsKey(digest)) {
       final blockIdx = sig.weak2block[digest]!;
-      final strong2 = await calcStrongSum(
-          Uint8List.fromList(block.bytes()), sig.sigType, sig.strongLen);
+      final strong2 =
+          await calcStrongSum(block.bytes(), sig.sigType, sig.strongLen);
 
       if (uint8ListEquality(sig.strongSigs[blockIdx], strong2)) {
         weakSum.reset();

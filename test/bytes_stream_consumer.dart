@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:librsync/delta.dart';
+import 'package:librsync/src/reader_writer.dart';
 
 class BytesStreamConsumer implements Writer, StreamConsumer<List<int>> {
   final BytesBuilder builder = BytesBuilder();

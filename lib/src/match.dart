@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
-import 'package:librsync/delta.dart';
 import 'package:librsync/src/op.dart';
+import 'package:librsync/src/reader_writer.dart';
 
 typedef MatchKind = int;
 
@@ -13,11 +13,11 @@ class Match {
   int pos, len;
   Writer output;
   int outputBufferSize;
-  List<int> litBuf;
+  final BytesBuilder bytesBuilder;
 
   Match(
       {required this.output,
-      required this.litBuf,
+      required this.bytesBuilder,
       required this.outputBufferSize})
       : kind = 0,
         pos = 0,
@@ -87,11 +87,15 @@ class Match {
               break;
           }
 
+          final bytesBuilder = BytesBuilder(copy: false);
           final cmdBytes = fixedIntBytes(cmd, 1);
           final lenBytes = fixedIntBytes(len, lenSize);
-          await output.write(cmdBytes + lenBytes + litBuf);
+          bytesBuilder.add(cmdBytes);
+          bytesBuilder.add(lenBytes);
+          bytesBuilder.add(this.bytesBuilder.takeBytes());
+          await output.write(bytesBuilder.takeBytes());
 
-          litBuf.clear();
+          this.bytesBuilder.clear();
           break;
         }
     }
@@ -109,7 +113,7 @@ class Match {
     switch (kind) {
       case matchKindLiteral:
         {
-          litBuf.addAll(fixedIntBytes(pos, 1));
+          bytesBuilder.add(fixedIntBytes(pos, 1));
           this.len += 1;
           if (this.len >= outputBufferSize) {
             await flush();

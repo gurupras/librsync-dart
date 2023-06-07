@@ -1,4 +1,5 @@
 import 'dart:core';
+import 'dart:typed_data';
 
 import 'package:librsync/src/circbuf/basebuf.dart';
 
@@ -6,7 +7,7 @@ class AnyBuffer extends BaseBuffer {
   AnyBuffer(int size) : super(size);
 
   @override
-  int write(List<int> buf) {
+  int write(Uint8List buf) {
     final n = super.write(buf);
     writeCursor = ((writeCursor + n) % maxSize);
     return buf.length;

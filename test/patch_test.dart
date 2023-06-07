@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:librsync/patch.dart';
+import 'package:librsync/src/reader_writer.dart';
 import 'package:test/test.dart';
 
 import 'bytes_stream_consumer.dart';
@@ -17,11 +18,12 @@ void main() {
 
         final baseFile = await File('./test/testdata/$file.old').open();
         final deltaFile = File('./test/testdata/$tt.delta').openRead();
+        final deltaReader = StreamReader(deltaFile);
 
         final output = BytesStreamConsumer();
         final sink = IOSink(output);
 
-        await patchWithBaseFile(baseFile, deltaFile, sink);
+        await patchWithBaseFile(baseFile, deltaReader, sink);
 
         final expected = File('./test/testdata/$file.new').readAsBytesSync();
         final got = output.toUint8List();

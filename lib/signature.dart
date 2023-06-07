@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:async/async.dart';
 import 'package:librsync/patch.dart';
+import 'package:librsync/src/reader_writer.dart';
 import 'dart:typed_data';
 
 import 'package:librsync/src/rollsum.dart';
@@ -103,10 +104,10 @@ Future<SignatureType> createSignature(Stream<List<int>> input, IOSink? output,
 }
 
 Future<SignatureType> readSignature(Stream<List<int>> input) async {
-  final chunkedReader = ChunkedStreamReader<int>(input);
-  final magic = await readInt(chunkedReader);
-  final blockLen = await readInt(chunkedReader);
-  final strongLen = await readInt(chunkedReader);
+  final reader = StreamReader(input);
+  final magic = await readInt(reader);
+  final blockLen = await readInt(reader);
+  final strongLen = await readInt(reader);
 
   final strongSigs = <Uint8List>[];
   final weak2block = <int, int>{};
@@ -114,7 +115,7 @@ Future<SignatureType> readSignature(Stream<List<int>> input) async {
   for (;;) {
     int weakSum = 0;
     try {
-      weakSum = await readInt(chunkedReader);
+      weakSum = await readInt(reader);
     } catch (e) {
       if (e == 'EOF') {
         break;
@@ -122,7 +123,7 @@ Future<SignatureType> readSignature(Stream<List<int>> input) async {
         rethrow;
       }
     }
-    final strongSum = await chunkedReader.readBytes(strongLen);
+    final strongSum = await reader.readBytes(strongLen);
     weak2block[weakSum] = strongSigs.length;
     strongSigs.add(strongSum);
   }
@@ -135,20 +136,16 @@ Future<SignatureType> readSignature(Stream<List<int>> input) async {
       weak2block: weak2block);
 }
 
-Future<int> readInt(ChunkedStreamReader<int> input) async {
+Future<int> readInt(Reader input) async {
   return readFixedInt(input, 4);
 }
 
-Future<int> readFixedInt(ChunkedStreamReader<int> input, int size) async {
-  final list = await input.readChunk(size);
+Future<int> readFixedInt(Reader input, int size) async {
+  final list = await input.read(size);
   if (list.length < size) {
     throw 'EOF';
   }
-  int value = 0;
-  for (int i = 0; i < size; i++) {
-    value = (value << 8) | list[i];
-  }
-  return value;
+  return parseIntBitWise(list);
 }
 
 int parseIntUsingByteData(List<int> list) {

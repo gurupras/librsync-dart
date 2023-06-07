@@ -1,6 +1,7 @@
-import 'package:async/async.dart';
 import 'package:librsync/delta.dart';
 import 'package:librsync/patch.dart';
+import 'package:librsync/src/delta_stream.dart';
+import 'package:librsync/src/reader_writer.dart';
 import 'package:test/test.dart';
 
 import '../test/bytes_stream_consumer.dart';
@@ -14,13 +15,11 @@ void main() async {
 
   final sig = await testCreateSignature(Stream.fromIterable([base]));
 
-  final deltaWriter = BytesStreamConsumer();
-  await delta(
-      sig, ChunkedStreamReader(Stream.fromIterable([target])), deltaWriter);
+  final deltaReadWriter = DeltaReadWriteStream();
+  delta(sig, StreamReader(Stream.fromIterable([target])), deltaReadWriter);
 
   final output = BytesStreamConsumer();
-  await patch(SeekableList(base),
-      Stream.fromIterable([deltaWriter.toUint8List()]), output);
+  await patch(SeekableList(base), deltaReadWriter, output);
 
   expect(output.toUint8List(), target);
 }
