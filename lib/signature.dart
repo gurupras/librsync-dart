@@ -14,7 +14,7 @@ class SignatureType {
   MagicNumber sigType;
   int blockLen;
   int strongLen;
-  List<Uint8List> strongSigs;
+  List<List<int>> strongSigs;
   Map<int, int> weak2block;
 
   SignatureType({
